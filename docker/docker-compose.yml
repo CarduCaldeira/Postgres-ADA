@@ -1,0 +1,41 @@
+version: "3.8"
+services:
+  db:
+    image: postgres
+    container_name: local_pgdb
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: user-name
+      POSTGRES_PASSWORD: strong-password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./../data/pgdata:/var/lib/postgresql/data/pgdata
+      - ./../files:/home
+    networks:
+      - pg_network
+      
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_ada
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user-name@domain-name.com
+      PGADMIN_DEFAULT_PASSWORD: strong-password
+    volumes:
+      - ./../data/pgadmin:/var/lib/pgadmin
+    networks:
+      - pg_network
+    user: "${UID}:${GID}" 
+  
+networks:
+  pg_network:
+    driver: bridge
+  
+  #docker exec -it local_pgdb psql -U user-name -d postgres
+  
+  #./pgadmin/storage/user-name_domain-name.com/
+
