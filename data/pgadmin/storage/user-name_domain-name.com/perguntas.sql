@@ -1,66 +1,61 @@
-
-
 -- Qual modelo de máquina apresenta mais falhas.
-select
-m2.modelo,
-count(*) as failure_count
-from  processed_data.falha f 
-join processed_data.maquina m  on f.id_maquina  = m.id
-join processed_data.modelo m2 on m.id_modelo = m2.id 
-group  by m2.modelo 
-order by failure_count desc;
+SELECT
+pmo.modelo,
+COUNT(*) AS failure_count
+FROM  processed_data.falha pf 
+INNER JOIN processed_data.maquina pm  ON pf.id_maquina  = pm.id
+INNER JOIN processed_data.modelo pmo ON pm.id_modelo = pmo.id 
+GROUP  BY pmo.modelo 
+ORDER BY failure_count DESC;
 
+---------------------------------------------------------------------
 
 -- Qual a quantidade de falhas por idade da máquina.
-select date_part('year', current_date) - m.ano  as age,
-       count(*) AS f_count
-from processed_data.falha f
-join processed_data.maquina m ON f.id_maquina = m.id
-group by date_part('year', current_date)- m.ano 
-order by age asc;
+SELECT date_part('year', CURRENT_DATE) - pm.ano  AS age, COUNT(*)
+FROM processed_data.falha pf
+JOIN processed_data.maquina pm ON pf.id_maquina = pm.id
+GROUP BY age
+ORDER BY age ASC;
 
+--------------------------------------------------------------------
 
 -- Qual componente apresenta maior quantidade de falhas por máquina.
 WITH ranked AS(
-   SELECT m.id,
-          c.componente,
-          COUNT(*) AS failure_count,
-          dense_rank() OVER (PARTITION BY m.id
-                             ORDER BY COUNT(*) DESC) AS rank
-   FROM processed_data.falha f
-   LEFT JOIN processed_data.componente c ON f.id_componente = c.id
-   LEFT JOIN processed_data.maquina m ON f.id_maquina = m.id
-   GROUP BY m.id,
-            c.componente
+SELECT pm.id,pc.componente,
+       COUNT(*) AS quantidade,
+       dense_rank() OVER (PARTITION BY pm.id
+       ORDER BY COUNT(*) DESC) AS rank
+FROM processed_data.falha pf
+INNER JOIN processed_data.componente pc ON pf.id_componente = pc.id
+INNER JOIN processed_data.maquina pm ON pf.id_maquina = pm.id
+GROUP BY pm.id, pc.componente
 )
 SELECT id,
        componente,
-       failure_count
+       quantidade
 FROM ranked
 WHERE rank = 1
 ORDER BY id;
 
+----------------------------------------------------------------
 
 -- A média da idade das máquinas por modelo
-SELECT m2.modelo,
-       avg(date_part('year', current_date) - m.ano) AS average_age
-FROM processed_data.maquina m
-LEFT JOIN processed_data.modelo m2 ON m.id_modelo = m2.id
-GROUP BY m2.modelo
-order by average_age;
+SELECT pmod.modelo, AVG(date_part('year', current_date) - pm.ano) AS average_age
+FROM processed_data.maquina pm
+INNER JOIN processed_data.modelo pmod ON pm.id_modelo = pmod.id
+GROUP BY pmod.modelo
+ORDER BY average_age;
 
+------------------------------------------------------------------
 
 -- Quantidade de erro por tipo de erro e modelo da máquina.
-SELECT e.id,
-       m2.modelo,
-       count(*) AS COUNT
-FROM processed_data.maquina_erro em
-LEFT JOIN processed_data.erro e ON em.id_erro = e.id
-LEFT JOIN processed_data.maquina m ON m.id = em.id_maquina
-LEFT JOIN processed_data.modelo m2 ON m2.id = m.id_modelo
-GROUP BY e.id,
-         m2.modelo
-ORDER BY COUNT desc;
+SELECT pe.erro, pmod.modelo, COUNT(*) AS count
+FROM processed_data.maquina_erro pme
+INNER JOIN processed_data.erro pe ON pme.id_erro = pe.id
+INNER JOIN processed_data.maquina pm ON pm.id = pme.id_maquina
+INNER JOIN processed_data.modelo pmod ON pmod.id = pm.id_modelo
+GROUP BY pe.erro, pmod.modelo
+ORDER BY count DESC;
 
 -- componente entre modelos
 --select
